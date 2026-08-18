@@ -2,8 +2,7 @@
  False,
  False,
  True,
- 'D:\\pdf '
- 'reader\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\images\\icon-windowed.ico',
+ ['D:\\pdf reader\\assets/icon.ico'],
  None,
  False,
  False,
@@ -72,7 +71,7 @@
  [],
  False,
  False,
- 1787045568,
+ 1787049061,
  [('runw.exe',
    'D:\\pdf '
    'reader\\venv\\Lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit-intel\\runw.exe',
