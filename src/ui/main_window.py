@@ -29,9 +29,9 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
-    QHBoxLayout,
     QInputDialog,
     QDialogButtonBox,
+    QTextEdit,
 )
 
 from src.pdf.document import PDFDocument
@@ -823,6 +823,14 @@ class MainWindow(QMainWindow):
             self.show_annotations
         )
 
+        # --------------------------------------------------
+        # EXTRACT DATA
+        # --------------------------------------------------
+
+        self.right_panel.extract_data_requested.connect(
+            self.extract_current_page_data
+        )
+
         self.right_panel.download_button.clicked.connect(
             self.save_as
         )
@@ -1475,12 +1483,250 @@ class MainWindow(QMainWindow):
             f"{len(self.search_results)}"
         )
             # ======================================================
+    # EXTRACT CURRENT PAGE DATA
+    # ======================================================
+
+    def extract_current_page_data(
+        self
+    ):
+
+        """
+        Extract text/data from the currently displayed
+        PDF page and show it in a dialog.
+
+        This feature only extracts and displays the data.
+        It does not modify or save the PDF.
+        """
+
+        # --------------------------------------------------
+        # CHECK DOCUMENT
+        # --------------------------------------------------
+
+        if not self.pdf_document.is_open:
+
+            QMessageBox.information(
+                self,
+                "Extract Data",
+                "Open a PDF first."
+            )
+
+            return
+
+        # --------------------------------------------------
+        # GET RAW DOCUMENT
+        # --------------------------------------------------
+
+        raw_document = (
+            self._get_raw_document()
+        )
+
+        if raw_document is None:
+
+            QMessageBox.warning(
+                self,
+                "Extract Data",
+                "The underlying PDF document "
+                "is not available."
+            )
+
+            return
+
+        # --------------------------------------------------
+        # CURRENT PAGE
+        # --------------------------------------------------
+
+        current_page = (
+            self.viewer.current_page
+        )
+
+        if not (
+            0 <= current_page
+            < raw_document.page_count
+        ):
+
+            QMessageBox.warning(
+                self,
+                "Extract Data",
+                "The current PDF page is invalid."
+            )
+
+            return
+
+        # --------------------------------------------------
+        # LOAD PAGE
+        # --------------------------------------------------
+
+        try:
+
+            page = raw_document.load_page(
+                current_page
+            )
+
+            extracted_text = page.get_text(
+                "text"
+            )
+
+        except Exception as exc:
+
+            QMessageBox.critical(
+                self,
+                "Extraction Error",
+                f"Unable to extract data from "
+                f"the current page.\n\n"
+                f"{exc}"
+            )
+
+            return
+
+        # --------------------------------------------------
+        # CLEAN TEXT
+        # --------------------------------------------------
+
+        extracted_text = (
+            extracted_text.strip()
+        )
+
+        # --------------------------------------------------
+        # NO TEXT
+        # --------------------------------------------------
+
+        if not extracted_text:
+
+            extracted_text = (
+                "No extractable text was found "
+                "on this page.\n\n"
+                "This page may contain an image, "
+                "scanned document, or other content "
+                "that does not contain a text layer."
+            )
+
+        # --------------------------------------------------
+        # CREATE DIALOG
+        # --------------------------------------------------
+
+        dialog = QDialog(
+            self
+        )
+
+        dialog.setWindowTitle(
+            f"Extracted Data - Page "
+            f"{current_page + 1}"
+        )
+
+        dialog.resize(
+            750,
+            600
+        )
+
+        dialog_layout = QVBoxLayout(
+            dialog
+        )
+
+        # --------------------------------------------------
+        # HEADER
+        # --------------------------------------------------
+
+        title = QLabel(
+            f"Extracted Data — Page "
+            f"{current_page + 1}"
+        )
+
+        title.setStyleSheet(
+            """
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+                padding: 4px;
+            }
+            """
+        )
+
+        dialog_layout.addWidget(
+            title
+        )
+
+        # --------------------------------------------------
+        # TEXT BOX
+        # --------------------------------------------------
+
+        text_box = QTextEdit()
+
+        text_box.setReadOnly(
+            True
+        )
+
+        text_box.setPlainText(
+            extracted_text
+        )
+
+        text_box.setLineWrapMode(
+            QTextEdit.LineWrapMode.WidgetWidth
+        )
+
+        text_box.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #ffffff;
+                color: #000000;
+                border: 1px solid #d0d0d0;
+                border-radius: 5px;
+                padding: 8px;
+                font-size: 11pt;
+            }
+            """
+        )
+
+        dialog_layout.addWidget(
+            text_box,
+            1
+        )
+
+        # --------------------------------------------------
+        # CLOSE BUTTON
+        # --------------------------------------------------
+
+        button_layout = QHBoxLayout()
+
+        button_layout.addStretch(
+            1
+        )
+
+        close_button = QPushButton(
+            "Close"
+        )
+
+        close_button.setMinimumWidth(
+            90
+        )
+
+        close_button.clicked.connect(
+            dialog.accept
+        )
+
+        button_layout.addWidget(
+            close_button
+        )
+
+        dialog_layout.addLayout(
+            button_layout
+        )
+
+        # --------------------------------------------------
+        # SHOW
+        # --------------------------------------------------
+
+        dialog.exec()
+
+    # ======================================================
     # RAW PDF DOCUMENT
     # ======================================================
 
-    def _get_raw_document(self):
+    def _get_raw_document(
+        self
+    ):
 
         if not self.pdf_document.is_open:
+
             return None
 
         return self.pdf_document.doc
@@ -1770,7 +2016,6 @@ class MainWindow(QMainWindow):
                 page_number
             )
 
-            # Indent according to bookmark level.
             item.setText(
                 (
                     "    "
@@ -1975,7 +2220,6 @@ class MainWindow(QMainWindow):
                 False
             )
 
-            # Add a top-level bookmark.
             toc.append(
                 [
                     1,
@@ -2011,7 +2255,6 @@ class MainWindow(QMainWindow):
                     f"for page {page_number}."
                 )
 
-            # Refresh bookmark list.
             if dialog is not None:
 
                 dialog.accept()
@@ -2197,8 +2440,6 @@ class MainWindow(QMainWindow):
 
                     continue
 
-                # PyMuPDF supports multiple rectangles
-                # for a single highlight annotation.
                 annotation = (
                     page.add_highlight_annot(
                         rectangles
@@ -2249,7 +2490,6 @@ class MainWindow(QMainWindow):
 
             self._refresh_viewer_after_document_change()
 
-            # Clear text selection after annotation.
             try:
 
                 self.viewer.clear_text_selection()
@@ -2285,8 +2525,7 @@ class MainWindow(QMainWindow):
                 "Annotation Error",
                 str(exc)
             )
-
-    # ======================================================
+                # ======================================================
     # PRINT
     # ======================================================
 
@@ -2609,7 +2848,7 @@ class MainWindow(QMainWindow):
             f"Annotations: {annotation_count}"
         )
 
-            # ======================================================
+    # ======================================================
     # PAGE NAVIGATION
     # ======================================================
 

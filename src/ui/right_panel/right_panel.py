@@ -18,6 +18,8 @@ class RightPanel(QWidget):
 
     search_requested = Signal()
 
+    extract_data_requested = Signal()
+
     bookmark_requested = Signal()
 
     annotation_requested = Signal()
@@ -118,7 +120,7 @@ class RightPanel(QWidget):
         )
 
         # ==================================================
-        # BOOKMARK
+        # BOOKMARKS
         # ==================================================
 
         self.bookmark_button = (
@@ -137,7 +139,7 @@ class RightPanel(QWidget):
         )
 
         # ==================================================
-        # ANNOTATION
+        # ANNOTATIONS
         # ==================================================
 
         self.annotation_button = (
@@ -147,17 +149,31 @@ class RightPanel(QWidget):
             )
         )
 
-        # Annotation is ENABLED.
-        self.annotation_button.setEnabled(
-            True
-        )
-
         self.annotation_button.clicked.connect(
             self.annotation_requested.emit
         )
 
         self.layout.addWidget(
             self.annotation_button
+        )
+
+        # ==================================================
+        # EXTRACT DATA
+        # ==================================================
+
+        self.extract_data_button = (
+            self.create_button(
+                "extract.svg",
+                "Extract Data"
+            )
+        )
+
+        self.extract_data_button.clicked.connect(
+            self.extract_data_requested.emit
+        )
+
+        self.layout.addWidget(
+            self.extract_data_button
         )
 
         # ==================================================
@@ -239,6 +255,10 @@ class RightPanel(QWidget):
             self
         )
 
+        # --------------------------------------------------
+        # SIZE
+        # --------------------------------------------------
+
         button.setFixedSize(
             44,
             44
@@ -283,17 +303,33 @@ class RightPanel(QWidget):
             tooltip
         )
 
+        # --------------------------------------------------
+        # CURSOR
+        # --------------------------------------------------
+
         button.setCursor(
             Qt.CursorShape.PointingHandCursor
         )
+
+        # --------------------------------------------------
+        # FOCUS
+        # --------------------------------------------------
 
         button.setFocusPolicy(
             Qt.FocusPolicy.NoFocus
         )
 
+        # --------------------------------------------------
+        # BUTTON BEHAVIOR
+        # --------------------------------------------------
+
         button.setAutoRaise(
             False
         )
+
+        # --------------------------------------------------
+        # OBJECT NAME
+        # --------------------------------------------------
 
         button.setObjectName(
             "RightPanelButton"
@@ -389,6 +425,14 @@ class RightPanel(QWidget):
         # --------------------------------------------------
 
         self.annotation_button.setEnabled(
+            is_open
+        )
+
+        # --------------------------------------------------
+        # EXTRACT DATA
+        # --------------------------------------------------
+
+        self.extract_data_button.setEnabled(
             is_open
         )
 
